@@ -3,30 +3,65 @@ import { prices } from ".."
 type orderData = {
     asset : string,
     qty : number
+    id : string
 }
 
-const balances = {
+type order = {
+    orderId : string,
+        userId : string,
+        type : string,
+        asset : string,
+        buy : number,
+        locked : number
+}
+export type userInfo={
+    tradable : number,
+    locked : number
+    orders : order[]
+}
+
+const balances:Record<string , userInfo> = {
     "user_1" : {
-        tradable : 10000000, //stored in integer and not float with 4 decimal 1000USD = 10000000
-        locked : 0
+        tradable : 50000000, //stored in integer and not float with 4 decimal 5000USD = 10000000
+        locked : 0,
+        //this orders will be send to the frontend and there the current price will be calulated dynamically
+        orders : []
     }
 }
 
-export const orderHandler = async({asset , qty} : orderData)=>{
-    const assetInfo = prices[asset]
-    if(!assetInfo) return; //need to send update to the another stream that backend reads
-    const orderPrice = (qty * assetInfo.price)
+const open_orders:order[] = []
 
-    if(orderPrice > balances["user_1"].tradable){
+export const orderHandler = async({asset , qty , id} : orderData)=>{
+    const assetInfo= prices[asset]
+    if(!assetInfo) return; //need to send update to the another stream that backend reads
+    if(!balances["user_1"]) return;
+    const assetPrice = assetInfo.price/10**assetInfo.decimal
+
+    const orderPriceFloat = (qty * assetPrice)
+    const orderPriceScaled = Math.round(orderPriceFloat * 10 **4);
+
+    if(orderPriceScaled > balances["user_1"].tradable){
         console.log("Insufficient Balance for order")
         return
     }
 
-    balances["user_1"].tradable -= orderPrice;
-    balances["user_1"].locked = orderPrice;
-
+    balances["user_1"].tradable -= orderPriceScaled;
+    balances["user_1"].locked = orderPriceScaled;
+    const order = {
+        orderId : id,
+        userId : "1",
+        type : "long",
+        asset,
+        buy : assetInfo.price,
+        locked : orderPriceScaled
+    }
+    balances["user_1"].orders.push(order)
+    open_orders.push(order)
     //then send this update to the order_status stream that the backend listens to
-    console.log(`Order for ${qty} ${asset} placed successfully`)
-    console.log(`Users balance is ${balances["user_1"].tradable/10**4}`)
+    //using hset instead of stream because we want a snapshot,
+    console.log(`Order for ${qty} ${asset} placed successfully at ${orderPriceScaled}`)
+    console.log(`Users balance is ${balances["user_1"].tradable}`)
+    return balances["user_1"];
 
 }
+

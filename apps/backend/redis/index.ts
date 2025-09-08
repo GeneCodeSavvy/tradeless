@@ -46,4 +46,8 @@ export class RedisManager{
         return true;
         //this listen to a callback stream and return value when completed order
     }
+
+    getClient(){
+        return this.client
+    }
 }

@@ -1,7 +1,7 @@
 // IN memory variable PRICES which gets updated in every 100ms 
 //  reads from the redis stream and updates the price 
 import { createClient } from "redis";
-import { orderHandler } from "./order";
+import { orderHandler, type userInfo } from "./order";
 
 type assetInfo = {
     price : number,
@@ -30,8 +30,18 @@ async function readStream(key:string ,  handler:(data:any)=>void , count?: numbe
         //@ts-ignore
         const stream_data = JSON.parse(stream[0].messages[0].message.data)
         //pass the data to the handler functions
-        handler(stream_data);
+        await handler(stream_data);
     }
+}
+
+async function persistBalance(userId : string , balance:userInfo){
+    try{
+        await redisClient.set(`balances:${userId}`, JSON.stringify(balance))
+    console.log("user-info updated")
+    }catch(e){
+        console.log(e);
+    }
+    
 }
 
 // xRead() -> Promise<StreamMessages[] | null>
@@ -62,6 +72,8 @@ redisClient.on("connect", async()=>{
                 decimal : data.decimal
             }
         }
+        //here also change the users balance that he is gaining profit or loss on all orders
+
     })
 
     //order handler
@@ -70,9 +82,15 @@ redisClient.on("connect", async()=>{
     // const orderData = { asset : stream_data.asset , qty:stream_data:qty }
     // orderHandler(orderData);
     // })
-    readStream(ORDER_STREAM_KEY, (stream_data)=>{
-        const orderData = {asset : stream_data.asset , qty : stream_data.qty}
-        orderHandler(orderData)
+    readStream(ORDER_STREAM_KEY, async(stream_data)=>{
+        const id = new Date().toString();
+        const orderData = {asset : stream_data.asset , qty : stream_data.qty, id}
+        const balances = await orderHandler(orderData)
+        if(!balances){
+            console.log("something happened while placing order")
+            return;
+        }
+        await persistBalance("user_1",balances)
     })
 })
 
