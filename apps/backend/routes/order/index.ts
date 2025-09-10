@@ -7,8 +7,8 @@ const redisService = RedisManager.getInstance()
 
 tradeRouter.post('/', async(req,res)=>{
     try{    
-        const {asset , qty , type }= req.body;
-        const placed = await redisService.newOrder({asset , qty , type, orderId:"123"})
+        const {asset , qty , type , price , slippage }= req.body;
+        const placed = await redisService.newOrder({asset , qty , type, price , slippage, orderId:"123"})
         if(!placed){
             res.status(402).json({message : "unable to place order"})
             return

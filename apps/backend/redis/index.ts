@@ -1,10 +1,13 @@
 
 import { createClient, type RedisClientType } from "redis";
+import { da } from "zod/locales";
 
 type newOrderData = {
     orderId : string,
     asset : string,
     qty : number,
+    slippage : number,
+    price : number,
     type : "long" | "short"
 }
 const ORDER_STREAM_KEY = "order_stream"
@@ -38,7 +41,9 @@ export class RedisManager{
 
         const stream_data = { 
             asset : data.asset,
-            qty : data.qty
+            qty : data.qty,
+            slippage : data.slippage,
+            price : data.price
         }
         
         await this.client.xAdd(ORDER_STREAM_KEY, "*", {data : JSON.stringify(stream_data)})
