@@ -1,36 +1,4 @@
-import { prices } from "..";
-
-type orderData = {
-	asset: string;
-	qty: number;
-	id: string;
-	slippage: number;
-	price: number;
-	userId: string;
-};
-
-type order = {
-	orderId: string;
-	userId: string;
-	type: string;
-	asset: string;
-	buy: number;
-	locked: number;
-};
-export type userInfo = {
-	tradable: number;
-	locked: number;
-	orders: order[];
-};
-
-const balances: Record<string, userInfo> = {
-	user_1: {
-		tradable: 50000000, //stored in integer and not float with 4 decimal 5000USD = 10000000
-		locked: 0,
-		//this orders will be send to the frontend and there the current price will be calulated dynamically
-		orders: [],
-	},
-};
+import type { order, orderData,orderHandlerOptions } from "../types";
 
 const open_orders: order[] = [];
 
@@ -41,7 +9,7 @@ export const orderHandler = async ({
 	slippage,
 	price,
 	userId,
-}: orderData) => {
+}: orderData,{balances , prices}: orderHandlerOptions) => {
 	try {
 		if (!userId) {
 			console.log("No userId, cancelling....");
