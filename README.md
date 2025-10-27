@@ -245,3 +245,61 @@ Tests cover CFD order validation, slippage protection, and virtual balance manag
 ---
 
 This CFD platform simulates cryptocurrency trading without actual asset ownership, using real market prices for accurate profit/loss calculations.
+
+## Next Steps
+
+```mermaid
+flowchart TD
+    subgraph External["External Data Sources"]
+        BP[Backpack Exchange<br/>WebSocket API]
+    end
+
+    subgraph DataLayer["Data Layer"]
+        R[Redis<br/>• Streams<br/>• Pub/Sub<br/>• Cache]
+        DB[(PostgreSQL<br/>• User Balances<br/>• Orders<br/>• Trades)]
+    end
+    
+    subgraph GatewayLayer["Gateway Layer"]
+        GW[API Gateway<br/>• Auth<br/>• Rate Limiting]
+    end
+
+    subgraph Services["Backend Services"]
+        P[Poller Service<br/>Market Data Fetcher]
+        E[Trading Engine<br/>Order Processor]
+        WS[WebSocket Server<br/>Port: 3333]
+        API[Backend API<br/>Port: 8080]
+        Auth[Auth Service]
+    end
+
+    subgraph Client["Client Layer"]
+        FE[Next.js Frontend<br/>Port: 3000]
+    end
+
+    %% Data Flow
+    BP -->|Real-time market data| P
+    P -->|price_updates channel| R
+    P -->|ticker_stream| R
+    R -->|Subscribe to price feeds| E
+    GW -->|order_stream| R
+    R -->|Process trading orders| E
+    E -->|Update user balances & orders| DB
+    E -->|Invalidate cache| R
+    R -->|Stream ticker data| WS
+    WS <-->|Live price updates| FE
+    GW <-->|Authenticated API Calls| FE
+    API --> GW
+    Auth --> GW
+
+    %% Styling
+    classDef external fill:#ff6b6b,stroke:#c23616,color:#fff
+    classDef data fill:#4ecdc4,stroke:#00a085,color:#fff
+    classDef service fill:#45b7d1,stroke:#2c5aa0,color:#fff
+    classDef client fill:#54a0ff,stroke:#2f3542,color:#fff
+    classDef gateway fill:#feca57,stroke:#b37400,color:#fff
+
+    class BP external
+    class R,DB data
+    class GW gateway
+    class P,E,WS,API,Auth service
+    class FE client
+```
