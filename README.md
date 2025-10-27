@@ -15,7 +15,7 @@ This project is a CFD trading platform that simulates cryptocurrency trading wit
 
 ---
 
-##  **Core Applications (`apps/`)**
+## **Core Applications (`apps/`)**
 
 ### 1. **Backend** (`apps/backend/`) - Main API Server
 
@@ -99,44 +99,48 @@ This project is a CFD trading platform that simulates cryptocurrency trading wit
 ## **System Architecture**
 
 ```mermaid
-graph TB
-    subgraph "External Data"
+flowchart TD
+    subgraph External["External Data Sources"]
         BP[Backpack Exchange<br/>WebSocket API]
     end
 
-    subgraph "Data Layer"
-        R[(Redis<br/>Streams & Pub/Sub)]
+    subgraph DataLayer["Data Layer"]
+        R[Redis<br/>• Streams<br/>• Pub/Sub<br/>• Key-Value]
     end
 
-    subgraph "Services"
-        P[Poller Service<br/>Port: N/A]
-        E[Trading Engine<br/>Port: N/A]
+    subgraph Services["Backend Services"]
+        P[Poller Service<br/>Market Data Fetcher]
+        E[Trading Engine<br/>Order Processor]
         WS[WebSocket Server<br/>Port: 3333]
         API[Backend API<br/>Port: 8080]
     end
 
-    subgraph "Client"
+    subgraph Client["Client Layer"]
         FE[Next.js Frontend<br/>Port: 3000]
     end
 
-    BP -->|Real-time prices| P
+    %% Data Flow
+    BP -->|Real-time market data| P
     P -->|price_updates channel| R
     P -->|ticker_stream| R
-    R -->|Subscribe to prices| E
+    R -->|Subscribe to price feeds| E
     API -->|order_stream| R
-    R -->|Process orders| E
-    E -->|Update balances| R
-    R -->|Read ticker data| WS
-    WS <-->|WebSocket| FE
-    API <-->|REST API| FE
+    R -->|Process trading orders| E
+    E -->|Update user balances| R
+    R -->|Stream ticker data| WS
+    WS <-->|Live price updates| FE
+    API <-->|Authentication & Orders| FE
 
-    style BP fill:#ff6b6b
-    style R fill:#4ecdc4
-    style P fill:#45b7d1
-    style E fill:#96ceb4
-    style WS fill:#feca57
-    style API fill:#ff9ff3
-    style FE fill:#54a0ff
+    %% Styling
+    classDef external fill:#ff6b6b,stroke:#c23616,color:#fff
+    classDef data fill:#4ecdc4,stroke:#00a085,color:#fff
+    classDef service fill:#45b7d1,stroke:#2c5aa0,color:#fff
+    classDef client fill:#54a0ff,stroke:#2f3542,color:#fff
+
+    class BP external
+    class R data
+    class P,E,WS,API service
+    class FE client
 ```
 
 ### **Data Streams**:
