@@ -13,6 +13,5 @@ export function verifyToken(token:string){
     }catch(e){
         console.log(e);
         return null
-        
     }
 }
